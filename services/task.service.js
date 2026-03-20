@@ -3,12 +3,14 @@ import Task from "../models/task.model.js";
 
 export const getAllTasksService = async (userId, queryParams) => 
     {
-          const { page = 1, limit = 10, status, sort = "desc" } = queryParams;
-
-
+          const { page = 1, limit = 10, status, sort = "desc", search } = queryParams;
 
   // Build query
   const query = { userId };
+
+  if (search) {
+    query.title = { $regex: search, $options: "i" }; // Case-insensitive search
+  }
 
   if (status) {
     const allowedStatus = ["pending", "in-progress", "completed"];
@@ -28,13 +30,18 @@ export const getAllTasksService = async (userId, queryParams) =>
     const skip = (pageNumber - 1) * limitNumber;
 
   // Sorting
-  const sortOption = sort === "asc" ? 1 : -1;
+  let sortOption = { createdAt: -1 };
+
+    if (sort === "oldest") sortOption = { createdAt: 1 };
+    if (sort === "latest") sortOption = { createdAt: -1 };
+    if (sort === "a-z") sortOption = { title: 1 };
+    if (sort === "z-a") sortOption = { title: -1 };
 
   // Run queries in parallel (performance boost 🚀)
   const [tasks, total] = await Promise.all([
     Task.find(query)
       .select("title description status createdAt")
-      .sort({ createdAt: sortOption })
+      .sort(sortOption)
       .skip(skip)
       .limit(limitNumber)
       .lean(),

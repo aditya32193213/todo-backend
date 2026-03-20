@@ -1,9 +1,9 @@
 import { getAllTasksService, createTaskService, updateTaskService, deleteTaskService } from "../services/task.service.js";
 export const getAllTasks = async (req, res,next) => {
     try {
-        const { page, limit, status, sort } = req.query;
+        const { page, limit, status, sort, search } = req.query;
 
-        const result = await getAllTasksService(req.user._id, { page, limit, status, sort });
+        const result = await getAllTasksService(req.user._id, { page, limit, status, sort, search });
         
         res.status(200).json({ 
             success: true,
