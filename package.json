@@ -1,0 +1,34 @@
+{
+  "name": "todo-backend",
+  "version": "1.0.0",
+  "description": "MERN Todo App with JWT authentication and task management",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "mern",
+    "todo",
+    "backend",
+    "express",
+    "mongodb",
+    "jwt",
+    "api"
+  ],
+  "author": "Aditya (Full Stack Developer)",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.3.1"
+  }
+}
