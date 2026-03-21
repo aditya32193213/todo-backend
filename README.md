@@ -12,9 +12,9 @@
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue?style=for-the-badge)](https://opensource.org/licenses/ISC)
 
 [![Live Demo](https://img.shields.io/badge/🌐_Frontend-Live_Demo-6366f1?style=for-the-badge)](https://todo-frontend-swart-nine.vercel.app/)
-[![Backend API](https://img.shields.io/badge/⚙️_Backend-API_Docs-10b981?style=for-the-badge)](https://todo-backend-t5gm.onrender.com/)
-[![License: MIT](https://img.shields.io/badge/📄_License-MIT-f59e0b?style=for-the-badge)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/🤝_PRs-Welcome-ec4899?style=for-the-badge)](CONTRIBUTING.md)
+[![Backend API](https://img.shields.io/badge/⚙️_Backend-Live_API-10b981?style=for-the-badge)](https://todo-backend-t5gm.onrender.com/)
+[![License: ISC](https://img.shields.io/badge/📄_License-ISC-f59e0b?style=for-the-badge)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/🤝_PRs-Welcome-ec4899?style=for-the-badge)](https://github.com/your-username/todo-backend/pulls)
 
 
 <br/>
@@ -293,7 +293,7 @@ NODE_ENV=development
 
 ```bash
 # 1️⃣  Clone the repository
-git clone https://github.com/your-username/todo-backend.git
+git clone https://github.com/aditya32193213/todo-backend.git
 cd todo-backend
 
 # 2️⃣  Install all dependencies
@@ -415,13 +415,21 @@ All regex metacharacters are escaped before passing to MongoDB's `$regex`, preve
 ## 🗺️ API Documentation
 
 ### 🌐 Base URL
-```
-http://localhost:5000/api
-```
+
+| Environment | URL |
+|---|---|
+| 🏠 Local development | `http://localhost:5000/api` |
+| 🚀 Production (Render) | `https://todo-backend-t5gm.onrender.com/api` |
 
 ### 🩺 Health Check
 ```http
 GET /
+```
+```bash
+# Local
+curl http://localhost:5000/
+# Production
+curl https://todo-backend-t5gm.onrender.com/
 ```
 ```json
 { "message": "Welcome to the Todo App!" }
@@ -934,6 +942,10 @@ The TTL index on `TokenBlacklist.expiresAt` is set to `expireAfterSeconds: 0`, m
 
 **Aditya**
 *Full Stack Developer*
+
+[![Frontend](https://img.shields.io/badge/🌐_Frontend-Live-6366f1?style=for-the-badge)](https://todo-frontend-swart-nine.vercel.app/)
+[![Backend](https://img.shields.io/badge/⚙️_Backend_API-Live-10b981?style=for-the-badge)](https://todo-backend-t5gm.onrender.com/)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/your-username)
 
 </div>
 
