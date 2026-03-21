@@ -8,6 +8,8 @@ import generateToken from "../utils/generateToken.js";
 export const registerUserService = async ({ name, email, password }) => {
   const normalizedEmail = email.toLowerCase().trim();
 
+  // findOne to check existence — does not need the password hash, so the
+  // select:false default is correct here. No .select("+password") needed.
   const existingUser = await User.findOne({ email: normalizedEmail });
   if (existingUser) {
     const error = new Error("User already exists");
@@ -28,7 +30,12 @@ export const registerUserService = async ({ name, email, password }) => {
 export const loginUserService = async ({ email, password }) => {
   const normalizedEmail = email.toLowerCase().trim();
 
-  const user = await User.findOne({ email: normalizedEmail });
+  // FIX: user.model.js now has select:false on the password field so it is
+  // excluded from every query by default. This findOne MUST opt back in with
+  // .select("+password") because bcrypt.compare() needs user.password to
+  // compare against. Without this, user.password would be undefined and
+  // every login attempt would silently fail the bcrypt check.
+  const user = await User.findOne({ email: normalizedEmail }).select("+password");
   if (!user) {
     const error = new Error("Invalid email or password");
     error.statusCode = 401;
@@ -47,8 +54,8 @@ export const loginUserService = async ({ email, password }) => {
 };
 
 // ── Logout ────────────────────────────────────────────────────────────────
-// Called BEFORE clearing localStorage so the token is still present in the
-// Authorization header when the backend blacklists it.
+// Called BEFORE localStorage is cleared on the client, so the token is still
+// present in the Authorization header when the backend blacklists it.
 export const logoutUserService = async (token) => {
   // Decode without verifying (already verified by protect middleware)
   // to extract the real expiry so the blacklist entry mirrors the token lifetime.
@@ -61,7 +68,9 @@ export const logoutUserService = async (token) => {
 // ── Update password ───────────────────────────────────────────────────────
 // Requires the user's current password for verification before hashing the new one.
 export const updatePasswordService = async (userId, { currentPassword, newPassword }) => {
-  // Fetch with password field (normally excluded by .select("-password") in middleware)
+  // .select("+password") opts in to the password hash for this one query.
+  // This is the correct place — the only service function that needs the hash
+  // after the initial login verification.
   const user = await User.findById(userId).select("+password");
   if (!user) {
     const error = new Error("User not found");
@@ -76,7 +85,7 @@ export const updatePasswordService = async (userId, { currentPassword, newPasswo
     throw error;
   }
 
-  const salt       = await bcrypt.genSalt(10);
-  user.password    = await bcrypt.hash(newPassword, salt);
+  const salt    = await bcrypt.genSalt(10);
+  user.password = await bcrypt.hash(newPassword, salt);
   await user.save();
 };

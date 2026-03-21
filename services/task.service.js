@@ -54,11 +54,7 @@ export const getAllTasksService = async (userId, queryParams) => {
 };
 
 // ── Metrics: single DB round-trip via aggregation ─────────────────────────
-// Previously the frontend made 4 separate HTTP calls (one per status).
-// This returns all counts in one aggregation so the client makes a single
-// GET /tasks/metrics request instead of four GET /tasks?limit=1&status=…
 export const getTaskMetricsService = async (userId) => {
-  // $facet runs each pipeline branch independently on the same collection scan
   const [result] = await Task.aggregate([
     { $match: { userId: new mongoose.Types.ObjectId(userId) } },
     {
@@ -87,6 +83,20 @@ export const createTaskService = async ({ title, description, status, userId }) 
     error.statusCode = 400;
     throw error;
   }
+
+  // Explicit status check before hitting the DB — consistent with
+  // updateTaskService which validates status at the service layer.
+  // Without this, an invalid value reaches Task.create(), triggers
+  // the Mongoose enum validator, and surfaces as a ValidationError
+  // with a generic Mongoose message instead of a targeted 400.
+  // status is optional (the model defaults to "pending"), so only
+  // validate when the caller actually supplies a value.
+  if (status !== undefined && !ALLOWED_STATUS.includes(status)) {
+    const error = new Error("Invalid status value");
+    error.statusCode = 400;
+    throw error;
+  }
+
   const task = await Task.create({
     title:       title.trim(),
     description: description?.trim(),
@@ -98,8 +108,17 @@ export const createTaskService = async ({ title, description, status, userId }) 
 
 // ── Update task ───────────────────────────────────────────────────────────
 export const updateTaskService = async (id, userId, updateData) => {
-  const { title, description, status } = updateData;
+  // FIX: ObjectId validation moved to the TOP — fail fast before building
+  // updateFields. Previously the ID check sat after ~15 lines of field
+  // assembly, meaning a garbage id like "abc" would pass through all
+  // validation logic before being rejected. Now it's the very first check.
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    const error = new Error("Invalid task ID");
+    error.statusCode = 400;
+    throw error;
+  }
 
+  const { title, description, status } = updateData;
   const updateFields = {};
 
   if (title !== undefined) {
@@ -124,12 +143,6 @@ export const updateTaskService = async (id, userId, updateData) => {
 
   if (Object.keys(updateFields).length === 0) {
     const error = new Error("No valid fields provided for update");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    const error = new Error("Invalid task ID");
     error.statusCode = 400;
     throw error;
   }

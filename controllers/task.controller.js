@@ -6,23 +6,30 @@ import {
   deleteTaskService,
 } from "../services/task.service.js";
 
+// FIX: Previously this spread result directly into the response root:
+//   { success, message, total, page, pages, count, tasks }
+// Every other endpoint nests its payload under a named key
+//   (task, user, metrics). The fix nests the paginated result under
+//   a `data` key so the entire API shares one consistent shape:
+//   { success, message, data: { ... } }
+//
+// ⚠ FRONTEND IMPACT: todoService.js must be updated from
+//   return res.data          →  return res.data.data
+// See the paired todoService.js fix delivered alongside this file.
 export const getAllTasks = async (req, res, next) => {
   try {
     const { page, limit, status, sort, search } = req.query;
-    const result = await getAllTasksService(req.user._id, { page, limit, status, sort, search });
+    const data = await getAllTasksService(req.user._id, { page, limit, status, sort, search });
     res.status(200).json({
       success: true,
       message: "Tasks fetched successfully",
-      ...result,
+      data,
     });
   } catch (error) {
     next(error);
   }
 };
 
-// Returns total / completed / inProgress / pending / pct in one request.
-// The frontend previously fired 4 parallel GET /tasks?limit=1&status=… calls
-// to compute these numbers — this endpoint replaces all four.
 export const getTaskMetrics = async (req, res, next) => {
   try {
     const metrics = await getTaskMetricsService(req.user._id);
