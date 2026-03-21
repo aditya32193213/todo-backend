@@ -25,6 +25,8 @@ This project implements user authentication and task management with clean archi
 <br/>
 
 ---
+
+
 ## 🎬 Demo
 
 [![TaskFlow Demo Video](https://img.shields.io/badge/▶️_Watch_Demo-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.loom.com/share/cf2456f629684cfeaec0441862e4416d)
@@ -47,8 +49,8 @@ This project implements user authentication and task management with clean archi
 - [🚀 Setup & Installation](#-setup--installation)
 - [🔒 Security Architecture](#-security-architecture)
 - [🗺️ API Documentation](#️-api-documentation)
-  - [🔐 Auth Endpoints](#-auth-endpoints)
-  - [✅ Task Endpoints](#-task-endpoints)
+- [🔐 Auth Endpoints](#-auth-endpoints)
+- [✅ Task Endpoints](#-task-endpoints)
 - [⚠️ Error Handling](#️-error-handling)
 - [🗄️ Database Design](#️-database-design)
 - [🧠 Architecture & Design Decisions](#-architecture--design-decisions)
@@ -945,7 +947,7 @@ The TTL index on `TokenBlacklist.expiresAt` is set to `expireAfterSeconds: 0`, m
 
 [![Frontend](https://img.shields.io/badge/🌐_Frontend-Live-6366f1?style=for-the-badge)](https://todo-frontend-swart-nine.vercel.app/)
 [![Backend](https://img.shields.io/badge/⚙️_Backend_API-Live-10b981?style=for-the-badge)](https://todo-backend-t5gm.onrender.com/)
-[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/your-username)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/aditya32193213)
 
 </div>
 
