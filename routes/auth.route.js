@@ -12,8 +12,6 @@ const router = express.Router();
 router.post("/register", registerUser);
 router.post("/login",    loginUser);
 router.post("/logout",   protect, logoutUser);
-
-// Requires authentication — users can only change their own password
 router.patch("/password",  protect, updatePassword);
 
 export default router;

@@ -6,7 +6,6 @@ import {
   deleteTaskService,
 } from "../services/task.service.js";
 
-// All task endpoints return { success, message, data } for a consistent API shape.
 export const getAllTasks = async (req, res, next) => {
   try {
     const { page, limit, status, sort, search } = req.query;
@@ -59,7 +58,6 @@ export const deleteTask = async (req, res, next) => {
   try {
     const { id } = req.params;
     await deleteTaskService(id, req.user._id);
-    // 204 No Content — the resource is gone; no body is expected or sent.
     res.status(204).end();
   } catch (error) {
     next(error);

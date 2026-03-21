@@ -1,10 +1,8 @@
 import mongoose from "mongoose";
 import Task from "../models/task.model.js";
 
-// ── Allowed values ────────────────────────────────────────────────────────
 const ALLOWED_STATUS = ["pending", "in-progress", "completed"];
 
-// ── Get all tasks (paginated + filtered) ─────────────────────────────────
 export const getAllTasksService = async (userId, queryParams) => {
   const { page = 1, limit = 10, status, sort = "latest", search } = queryParams;
 
@@ -53,7 +51,6 @@ export const getAllTasksService = async (userId, queryParams) => {
   };
 };
 
-// ── Metrics: single DB round-trip via aggregation ─────────────────────────
 export const getTaskMetricsService = async (userId) => {
   const [result] = await Task.aggregate([
     { $match: { userId: new mongoose.Types.ObjectId(userId) } },
@@ -76,7 +73,7 @@ export const getTaskMetricsService = async (userId) => {
   return { total, completed, inProgress, pending, pct };
 };
 
-// ── Create task ───────────────────────────────────────────────────────────
+
 export const createTaskService = async ({ title, description, status, userId }) => {
   if (!title?.trim()) {
     const error = new Error("Title is required");
@@ -84,13 +81,7 @@ export const createTaskService = async ({ title, description, status, userId }) 
     throw error;
   }
 
-  // Explicit status check before hitting the DB — consistent with
-  // updateTaskService which validates status at the service layer.
-  // Without this, an invalid value reaches Task.create(), triggers
-  // the Mongoose enum validator, and surfaces as a ValidationError
-  // with a generic Mongoose message instead of a targeted 400.
-  // status is optional (the model defaults to "pending"), so only
-  // validate when the caller actually supplies a value.
+
   if (status !== undefined && !ALLOWED_STATUS.includes(status)) {
     const error = new Error("Invalid status value");
     error.statusCode = 400;
@@ -106,9 +97,9 @@ export const createTaskService = async ({ title, description, status, userId }) 
   return task;
 };
 
-// ── Update task ───────────────────────────────────────────────────────────
+
 export const updateTaskService = async (id, userId, updateData) => {
-  // Validate ID first — reject invalid values before building update fields.
+  
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const error = new Error("Invalid task ID");
     error.statusCode = 400;
@@ -159,7 +150,6 @@ export const updateTaskService = async (id, userId, updateData) => {
   return updatedTask;
 };
 
-// ── Delete task ───────────────────────────────────────────────────────────
 export const deleteTaskService = async (id, userId) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const error = new Error("Invalid task ID");
