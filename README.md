@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📝 MERN Todo App Backend
+# 📝 TaskFlow - Backend
 
 ### *Your tasks. Your flow. Totally under control.*
 
