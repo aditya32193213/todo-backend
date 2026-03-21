@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import generateToken from "../utils/generateToken.js";
 
+// ── Register ──────────────────────────────────────────────────────────────
 export const registerUserService = async ({ name, email, password }) => {
   const normalizedEmail = email.toLowerCase().trim();
 
@@ -14,16 +15,16 @@ export const registerUserService = async ({ name, email, password }) => {
     throw error;
   }
 
-  const salt = await bcrypt.genSalt(10);
+  const salt           = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  const user = await User.create({ name, email: normalizedEmail, password: hashedPassword });
-
+  const user  = await User.create({ name, email: normalizedEmail, password: hashedPassword });
   const token = generateToken(user._id);
 
   return { id: user._id, name: user.name, email: user.email, token };
 };
 
+// ── Login ─────────────────────────────────────────────────────────────────
 export const loginUserService = async ({ email, password }) => {
   const normalizedEmail = email.toLowerCase().trim();
 
@@ -42,16 +43,40 @@ export const loginUserService = async ({ email, password }) => {
   }
 
   const token = generateToken(user._id);
-
   return { id: user._id, name: user.name, email: user.email, token };
 };
 
+// ── Logout ────────────────────────────────────────────────────────────────
+// Called BEFORE clearing localStorage so the token is still present in the
+// Authorization header when the backend blacklists it.
 export const logoutUserService = async (token) => {
   // Decode without verifying (already verified by protect middleware)
-  // to extract the real expiry so the blacklist entry mirrors the token lifetime
-  const decoded = jwt.decode(token);
-
-  const expiresAt = new Date(decoded.exp * 1000); // UNIX timestamp → Date
+  // to extract the real expiry so the blacklist entry mirrors the token lifetime.
+  const decoded   = jwt.decode(token);
+  const expiresAt = new Date(decoded.exp * 1000);
 
   await TokenBlacklist.create({ token, expiresAt });
+};
+
+// ── Update password ───────────────────────────────────────────────────────
+// Requires the user's current password for verification before hashing the new one.
+export const updatePasswordService = async (userId, { currentPassword, newPassword }) => {
+  // Fetch with password field (normally excluded by .select("-password") in middleware)
+  const user = await User.findById(userId).select("+password");
+  if (!user) {
+    const error = new Error("User not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    const error = new Error("Current password is incorrect");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const salt       = await bcrypt.genSalt(10);
+  user.password    = await bcrypt.hash(newPassword, salt);
+  await user.save();
 };

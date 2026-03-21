@@ -1,11 +1,19 @@
 import express from "express";
-import { registerUser, loginUser, logoutUser } from "../controllers/auth.controller.js";
+import {
+  registerUser,
+  loginUser,
+  logoutUser,
+  updatePassword,
+} from "../controllers/auth.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
 router.post("/register", registerUser);
-router.post("/login", loginUser);
-router.post("/logout", protect, logoutUser);
+router.post("/login",    loginUser);
+router.post("/logout",   protect, logoutUser);
+
+// Requires authentication — users can only change their own password
+router.put("/password",  protect, updatePassword);
 
 export default router;

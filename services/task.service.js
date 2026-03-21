@@ -1,47 +1,39 @@
 import mongoose from "mongoose";
 import Task from "../models/task.model.js";
 
+// ── Allowed values ────────────────────────────────────────────────────────
+const ALLOWED_STATUS = ["pending", "in-progress", "completed"];
+
+// ── Get all tasks (paginated + filtered) ─────────────────────────────────
 export const getAllTasksService = async (userId, queryParams) => {
-  // Fix 4: changed default sort from "desc" → "latest" to match sort logic
   const { page = 1, limit = 10, status, sort = "latest", search } = queryParams;
 
-  // Build query
   const query = { userId };
 
-  // trim first — whitespace-only search ("   ") is treated as no search
   const trimmedSearch = search?.trim();
   if (trimmedSearch) {
-    // escape user input before using in regex to prevent ReDoS
     const escaped = trimmedSearch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     query.title = { $regex: escaped, $options: "i" };
   }
 
   if (status) {
-    const allowedStatus = ["pending", "in-progress", "completed"];
-
-    if (!allowedStatus.includes(status)) {
+    if (!ALLOWED_STATUS.includes(status)) {
       const error = new Error("Invalid status value");
       error.statusCode = 400;
       throw error;
     }
-
     query.status = status;
   }
 
-  // Pagination setup
-  const pageNumber = Math.max(1, Number(page) || 1);
+  const pageNumber  = Math.max(1, Number(page)  || 1);
   const limitNumber = Math.min(50, Math.max(1, Number(limit) || 10));
-  const skip = (pageNumber - 1) * limitNumber;
+  const skip        = (pageNumber - 1) * limitNumber;
 
-  // Sorting
-  let sortOption = { createdAt: -1 }; // default: latest
+  let sortOption = { createdAt: -1 };
+  if (sort === "oldest") sortOption = { createdAt:  1 };
+  if (sort === "a-z")    sortOption = { title:       1 };
+  if (sort === "z-a")    sortOption = { title:      -1 };
 
-  if (sort === "oldest") sortOption = { createdAt: 1 };
-  if (sort === "latest") sortOption = { createdAt: -1 };
-  if (sort === "a-z") sortOption = { title: 1 };
-  if (sort === "z-a") sortOption = { title: -1 };
-
-  // Run queries in parallel
   const [tasks, total] = await Promise.all([
     Task.find(query)
       .select("title description status createdAt")
@@ -49,29 +41,54 @@ export const getAllTasksService = async (userId, queryParams) => {
       .skip(skip)
       .limit(limitNumber)
       .lean(),
-
     Task.countDocuments(query),
   ]);
 
   return {
     total,
-    page: pageNumber,
+    page:  pageNumber,
     pages: Math.ceil(total / limitNumber),
     count: tasks.length,
     tasks,
   };
 };
 
+// ── Metrics: single DB round-trip via aggregation ─────────────────────────
+// Previously the frontend made 4 separate HTTP calls (one per status).
+// This returns all counts in one aggregation so the client makes a single
+// GET /tasks/metrics request instead of four GET /tasks?limit=1&status=…
+export const getTaskMetricsService = async (userId) => {
+  // $facet runs each pipeline branch independently on the same collection scan
+  const [result] = await Task.aggregate([
+    { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+    {
+      $facet: {
+        total:      [{ $count: "n" }],
+        completed:  [{ $match: { status: "completed"   } }, { $count: "n" }],
+        inProgress: [{ $match: { status: "in-progress" } }, { $count: "n" }],
+        pending:    [{ $match: { status: "pending"     } }, { $count: "n" }],
+      },
+    },
+  ]);
 
+  const total      = result.total[0]?.n      ?? 0;
+  const completed  = result.completed[0]?.n  ?? 0;
+  const inProgress = result.inProgress[0]?.n ?? 0;
+  const pending    = result.pending[0]?.n    ?? 0;
+  const pct        = total ? Math.round((completed / total) * 100) : 0;
+
+  return { total, completed, inProgress, pending, pct };
+};
+
+// ── Create task ───────────────────────────────────────────────────────────
 export const createTaskService = async ({ title, description, status, userId }) => {
-  // trim first so whitespace-only strings ("   ") are treated as empty
   if (!title?.trim()) {
     const error = new Error("Title is required");
     error.statusCode = 400;
     throw error;
   }
   const task = await Task.create({
-    title: title.trim(),
+    title:       title.trim(),
     description: description?.trim(),
     status,
     userId,
@@ -79,13 +96,13 @@ export const createTaskService = async ({ title, description, status, userId }) 
   return task;
 };
 
+// ── Update task ───────────────────────────────────────────────────────────
 export const updateTaskService = async (id, userId, updateData) => {
   const { title, description, status } = updateData;
 
   const updateFields = {};
 
   if (title !== undefined) {
-    // reject whitespace-only titles on update just like on create
     if (!title.trim()) {
       const error = new Error("Title cannot be empty");
       error.statusCode = 400;
@@ -97,10 +114,7 @@ export const updateTaskService = async (id, userId, updateData) => {
   if (description !== undefined) updateFields.description = description.trim();
 
   if (status !== undefined) {
-    // Fix 3: validate status BEFORE adding to updateFields — keeps intent clear
-    // and prevents an invalid value ever entering updateFields even momentarily
-    const allowedStatus = ["pending", "in-progress", "completed"];
-    if (!allowedStatus.includes(status)) {
+    if (!ALLOWED_STATUS.includes(status)) {
       const error = new Error("Invalid status value");
       error.statusCode = 400;
       throw error;
@@ -135,6 +149,7 @@ export const updateTaskService = async (id, userId, updateData) => {
   return updatedTask;
 };
 
+// ── Delete task ───────────────────────────────────────────────────────────
 export const deleteTaskService = async (id, userId) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const error = new Error("Invalid task ID");
