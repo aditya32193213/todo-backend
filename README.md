@@ -24,6 +24,7 @@ This project implements user authentication and task management with clean archi
 
 <br/>
 
+---
 
 ## 🎬 Demo
 
@@ -31,6 +32,7 @@ This project implements user authentication and task management with clean archi
 
 > 📹 *Click above to watch a full walkthrough of TaskFlow in action!*
 
+---
 
 </div>
 
