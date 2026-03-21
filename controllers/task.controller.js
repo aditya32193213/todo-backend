@@ -6,16 +6,7 @@ import {
   deleteTaskService,
 } from "../services/task.service.js";
 
-// FIX: Previously this spread result directly into the response root:
-//   { success, message, total, page, pages, count, tasks }
-// Every other endpoint nests its payload under a named key
-//   (task, user, metrics). The fix nests the paginated result under
-//   a `data` key so the entire API shares one consistent shape:
-//   { success, message, data: { ... } }
-//
-// ⚠ FRONTEND IMPACT: todoService.js must be updated from
-//   return res.data          →  return res.data.data
-// See the paired todoService.js fix delivered alongside this file.
+// All task endpoints return { success, message, data } for a consistent API shape.
 export const getAllTasks = async (req, res, next) => {
   try {
     const { page, limit, status, sort, search } = req.query;
@@ -32,8 +23,8 @@ export const getAllTasks = async (req, res, next) => {
 
 export const getTaskMetrics = async (req, res, next) => {
   try {
-    const metrics = await getTaskMetricsService(req.user._id);
-    res.status(200).json({ success: true, metrics });
+    const data = await getTaskMetricsService(req.user._id);
+    res.status(200).json({ success: true, message: "Metrics fetched successfully", data });
   } catch (error) {
     next(error);
   }
@@ -48,7 +39,7 @@ export const createTask = async (req, res, next) => {
       status,
       userId: req.user._id,
     });
-    res.status(201).json({ success: true, message: "Task created successfully", task });
+    res.status(201).json({ success: true, message: "Task created successfully", data: task });
   } catch (error) {
     next(error);
   }
@@ -58,7 +49,7 @@ export const updateTask = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updatedTask = await updateTaskService(id, req.user._id, req.body);
-    res.status(200).json({ success: true, message: "Task updated successfully", task: updatedTask });
+    res.status(200).json({ success: true, message: "Task updated successfully", data: updatedTask });
   } catch (error) {
     next(error);
   }
@@ -68,7 +59,8 @@ export const deleteTask = async (req, res, next) => {
   try {
     const { id } = req.params;
     await deleteTaskService(id, req.user._id);
-    res.status(200).json({ success: true, message: "Task deleted successfully" });
+    // 204 No Content — the resource is gone; no body is expected or sent.
+    res.status(204).end();
   } catch (error) {
     next(error);
   }

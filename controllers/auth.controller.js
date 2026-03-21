@@ -21,12 +21,14 @@ export const registerUser = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Invalid email format" });
     }
 
-    if (password.trim().length < 6) {
+    // Use raw password for length — passwords are space-sensitive.
+    // The .trim() above only guards against a fully-blank submission.
+    if (password.length < 6) {
       return res.status(400).json({ success: false, message: "Password must be at least 6 characters" });
     }
 
     const user = await registerUserService({ name, email, password });
-    res.status(201).json({ success: true, message: "User registered successfully", user });
+    res.status(201).json({ success: true, message: "User registered successfully", data: user });
   } catch (error) {
     next(error);
   }
@@ -46,7 +48,7 @@ export const loginUser = async (req, res, next) => {
     }
 
     const user = await loginUserService({ email, password });
-    res.status(200).json({ success: true, message: "User logged in successfully", user });
+    res.status(200).json({ success: true, message: "User logged in successfully", data: user });
   } catch (error) {
     next(error);
   }
@@ -74,7 +76,9 @@ export const updatePassword = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "All password fields are required" });
     }
 
-    if (newPassword.trim().length < 6) {
+    // Length and equality checks use raw values — passwords are space-sensitive.
+    // The .trim() checks above only guard against fully-blank submissions.
+    if (newPassword.length < 6) {
       return res.status(400).json({ success: false, message: "New password must be at least 6 characters" });
     }
 

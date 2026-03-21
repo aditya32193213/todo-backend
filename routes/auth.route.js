@@ -14,6 +14,6 @@ router.post("/login",    loginUser);
 router.post("/logout",   protect, logoutUser);
 
 // Requires authentication — users can only change their own password
-router.put("/password",  protect, updatePassword);
+router.patch("/password",  protect, updatePassword);
 
 export default router;

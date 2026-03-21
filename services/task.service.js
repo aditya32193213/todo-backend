@@ -108,10 +108,7 @@ export const createTaskService = async ({ title, description, status, userId }) 
 
 // ── Update task ───────────────────────────────────────────────────────────
 export const updateTaskService = async (id, userId, updateData) => {
-  // FIX: ObjectId validation moved to the TOP — fail fast before building
-  // updateFields. Previously the ID check sat after ~15 lines of field
-  // assembly, meaning a garbage id like "abc" would pass through all
-  // validation logic before being rejected. Now it's the very first check.
+  // Validate ID first — reject invalid values before building update fields.
   if (!mongoose.Types.ObjectId.isValid(id)) {
     const error = new Error("Invalid task ID");
     error.statusCode = 400;

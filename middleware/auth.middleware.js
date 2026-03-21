@@ -15,7 +15,19 @@ export const protect = async (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
-    // 1. Reject tokens that were explicitly invalidated at logout.
+    // 1. Verify signature and expiry — CPU-only, no DB hit.
+    //    jwt.verify throws named errors on failure:
+    //      TokenExpiredError  — token was valid but exp < Date.now()
+    //      JsonWebTokenError  — bad signature, malformed, or wrong secret
+    //    Doing this FIRST means expired/malformed tokens are rejected without
+    //    touching the database. Only valid, non-expired tokens reach step 2.
+    //    Both errors are forwarded via next(error) so error.middleware.js
+    //    can identify them by name and return distinct messages.
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // 2. Reject tokens that were explicitly invalidated at logout.
+    //    Runs AFTER jwt.verify so the DB is only queried for tokens that are
+    //    cryptographically valid — expired/malformed traffic is already gone.
     //    The TTL index on TokenBlacklist auto-expires entries when the JWT
     //    itself expires, so the collection stays lean with no manual cleanup.
     const isBlacklisted = await TokenBlacklist.exists({ token });
@@ -25,19 +37,9 @@ export const protect = async (req, res, next) => {
       return next(err);
     }
 
-    // 2. Verify signature and expiry.
-    //    jwt.verify throws named errors on failure:
-    //      TokenExpiredError  — token was valid but exp < Date.now()
-    //      JsonWebTokenError  — bad signature, malformed, or wrong secret
-    //    Both are forwarded directly via next(error) so error.middleware.js
-    //    can identify them by name and return distinct messages.
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
     // 3. Confirm the account still exists.
-    //    FIX: .select("-password") removed — user.model.js already has
-    //    select:false on the password field, so the hash is excluded from
-    //    every findById/findOne by default. The explicit exclusion was
-    //    redundant and left readers wondering if there was a reason for it.
+    //    user.model.js has select:false on the password field, so the hash is
+    //    excluded from every findById/findOne by default — no .select() needed.
     req.user = await User.findById(decoded.id);
 
     if (!req.user) {

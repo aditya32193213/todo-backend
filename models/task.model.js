@@ -27,29 +27,28 @@ const TaskSchema = new mongoose.Schema(
 
 // ── Indexes ───────────────────────────────────────────────────────────────
 //
-// Single-field index on userId alone covers the base case (fetch all tasks
-// for a user) but forces MongoDB to scan every matching userId document
-// whenever a filter (status) or sort (createdAt) is added.
-//
-// Compound indexes extend that coverage to the two most common access patterns
-// in this API:
+// Three compound indexes cover every query pattern in this API.
+// MongoDB's leftmost-prefix rule means a query on userId alone hits all three,
+// so no separate single-field index on userId is needed.
 //
 //   { userId: 1, status: 1 }
 //     Covers:  GET /tasks?status=pending|in-progress|completed
-//     Without: MongoDB scans all userId documents, then filters in memory.
-//     With:    MongoDB jumps directly to the (userId, status) bucket.
+//     Without: Full scan of all userId docs, then in-memory filter.
+//     With:    Index seek directly to the (userId, status) bucket.
 //
 //   { userId: 1, createdAt: -1 }
 //     Covers:  GET /tasks sorted by latest (default) or oldest
-//     Without: MongoDB fetches all userId documents, then sorts in memory (SORT stage).
-//     With:    Documents arrive pre-sorted from the index — no in-memory sort.
+//     Without: Full scan + in-memory SORT stage.
+//     With:    Documents arrive pre-sorted — no in-memory sort.
 //
-// MongoDB uses the leftmost prefix rule: a query on userId alone still hits
-// both compound indexes, so the separate single-field index on userId is
-// intentionally removed to avoid maintaining a redundant index.
-// The two compound indexes below fully replace it.
+//   { userId: 1, title: 1 }
+//     Covers:  GET /tasks?sort=a-z and sort=z-a
+//     Without: { userId, createdAt } index used for the userId match,
+//              then every matched document sorted in memory by title.
+//     With:    Index already orders documents by title for that user.
 
-TaskSchema.index({ userId: 1, status: 1 });
+TaskSchema.index({ userId: 1, status:    1  });
 TaskSchema.index({ userId: 1, createdAt: -1 });
+TaskSchema.index({ userId: 1, title:     1  });
 
 export default mongoose.model("Task", TaskSchema);

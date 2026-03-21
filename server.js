@@ -3,7 +3,7 @@ dotenv.config();
 
 // ── Env validation ──────────────────────────────────────────────────────────
 // Fail fast with a clear message before attempting any DB or server setup
-const REQUIRED_ENV_VARS = ["MONGO_URI", "JWT_SECRET", "JWT_EXPIRES_IN"];
+const REQUIRED_ENV_VARS = ["MONGO_URI", "JWT_SECRET", "JWT_EXPIRES_IN", "CLIENT_URL"];
 
 const missingVars = REQUIRED_ENV_VARS.filter((key) => !process.env[key]);
 

@@ -12,8 +12,11 @@ export const registerUserService = async ({ name, email, password }) => {
   // select:false default is correct here. No .select("+password") needed.
   const existingUser = await User.findOne({ email: normalizedEmail });
   if (existingUser) {
+    // 409 Conflict — matches the status the 11000 duplicate-key handler in
+    // error.middleware.js returns for the same scenario under a race condition.
+    // Both sequential and concurrent duplicate-email paths now return 409.
     const error = new Error("User already exists");
-    error.statusCode = 400;
+    error.statusCode = 409;
     throw error;
   }
 

@@ -13,15 +13,14 @@ const app = express();
 app.use(helmet());
 
 // ── CORS ───────────────────────────────────────────────────────────────────
-// Default CLIENT_URL is "*" for local development.
-// In production, set CLIENT_URL to the exact origin of your React app so only
-// that origin can make cross-origin requests.
+// CLIENT_URL is required at startup (validated in server.js), so the value
+// here is always the exact origin of the frontend — never a wildcard.
 // Explicit methods + allowedHeaders prevents accidental preflight passes for
 // methods or headers this API never uses.
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: process.env.CLIENT_URL,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -71,7 +70,9 @@ const authLimiter = rateLimit({
   },
 });
 
+app.set("trust proxy", 1); // Enable if behind a proxy (e.g. Heroku) to get correct client IP for rate limiting
 app.use(globalLimiter);
+
 
 // Auth limiter must be declared before app.use("/api", routes) so it fires
 // for every /api/auth/* request regardless of which specific route matches.
