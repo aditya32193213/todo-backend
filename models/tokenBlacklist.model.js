@@ -2,12 +2,12 @@ import mongoose from "mongoose";
 
 const tokenBlacklistSchema = new mongoose.Schema({
   token: {
-    type:     String,
+    type: String,
     required: true,
-    unique:   true,
+    unique: true,
   },
   expiresAt: {
-    type:     Date,
+    type: Date,
     required: true,
   },
 });

@@ -14,9 +14,7 @@ export const protect = async (req, res, next) => {
   const token = authHeader.split(" ")[1];
 
   try {
- 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
 
     const isBlacklisted = await TokenBlacklist.exists({ token });
     if (isBlacklisted) {
@@ -25,18 +23,17 @@ export const protect = async (req, res, next) => {
       return next(err);
     }
 
-
     req.user = await User.findById(decoded.id);
-
     if (!req.user) {
       const err = new Error("The account associated with this token no longer exists.");
       err.statusCode = 401;
       return next(err);
     }
 
+    req.token = token;
+
     next();
   } catch (error) {
-
     next(error);
   }
 };
